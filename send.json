@@ -1,0 +1,40 @@
+{
+		"send":[
+				{
+						"name": {
+								"first": "豊臣",
+								"last": "秀吉"
+						},
+						"address": {
+								"postal_code": 123456,
+								"prefectures": "東京",
+								"cities": "大手町 1-1-1",
+								"apartment": "読売新聞社 123螳､"
+						}
+				},
+				{
+						"name": {
+								"first": "徳川",
+								"last": "家康"
+						},
+						"address":{
+								"postal_code": 789123,
+								"prefectures": "大阪県",
+								"cities": "大阪市 2-3-4",
+								"apartment": "姫路乗 456"
+						}
+				}
+		],
+		"self": {
+				"name": {
+						"first": "高橋",
+						"last": "純一"
+				},
+				"address": {
+						"postal_code": 456789,
+						"prefectures": "千葉県",
+						"cities": "千葉市 1-1-1",
+						"apartment": ""
+				}
+		}
+}

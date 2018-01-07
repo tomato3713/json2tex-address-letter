@@ -90,25 +90,23 @@ typedef struct _PERSONINFO {
  *				}
  *		}
  * }
- * }}}
- */
+ * }}} */
 int main(int argc, char *argv[]) {
 		//引数がなかった場合エラーを返す {{{
-//		if (argc != 2) { 
-//				fprintf(stderr, "error: not indicate filename\n");
-//				exit(1);
-//		} //}}}
+		if (argc != 2) { 
+				fprintf(stderr, "error: not indicate json filename\n");
+				exit(1);
+		} //}}}
 
 //parseするjsonファイルを指定
 //errorの場合NULLを返す
-JSON_Value *root_value = json_parse_file("./send.json");
- //error処理 {{{
+JSON_Value *root_value = json_parse_file(argv[1]);
+
+//jsonファイルを開けなかった場合のerror処理 {{{
 if ( root_value == NULL ){
-		fprintf(stderr, "error: fail to open the file:send.json\n" );
+		fprintf(stderr, "error: fail to open the file:%s\n", argv[1] );
 		exit(1);
 } // }}}
-
-JSON_Object *root = json_object(root_value);
 
 FILE* outFile = fopen("letter_address.tex", "w");
 //error 処理 {{{
@@ -118,11 +116,9 @@ if (!outFile) {
 }
 //}}}
 
-//自分の宛名をファイルに書きこむ {{{
-
+JSON_Object *root = json_object(root_value);
 //selfinfoに自分の住所を格納する {{{
 PERSON_INFO selfinfo;
-
 JSON_Object *self = json_object_get_object(root, "self");
 JSON2STRUCT_STR(self, selfinfo, name.first, NAME_MAX);
 JSON2STRUCT_STR(self, selfinfo, name.last, NAME_MAX);
@@ -130,36 +126,35 @@ JSON2STRUCT_NUM(self, selfinfo, address.postal_code);
 JSON2STRUCT_STR(self, selfinfo, address.prefectures, PREFECTURES_MAX);
 JSON2STRUCT_STR(self, selfinfo, address.cities, CITIES_MAX);
 JSON2STRUCT_STR(self, selfinfo, address.apartment, APARTMENT_MAX);
-		//}}}
-		fprintf(outFile, "\\documentclass[]{jletteraddress}\n");
-		fprintf(outFile, "\n\\sendername{%s %s}\n", selfinfo.name.last, selfinfo.name.first);
-		fprintf(outFile, "\\senderaddressa{%s %s}\n", selfinfo.address.prefectures, selfinfo.address.cities);
-		fprintf(outFile, "\\senderaddressb{%s}\n", selfinfo.address.apartment);
-		fprintf(outFile, "\\senderpostcode{%d}\n\n", selfinfo.address.postal_code);
-		// }}}
+//}}}
 
-
-		//送り先の宛先を構造体に保存し、ファイルに書き込む {{{
-		//personsにjson内の配列sendの要素を代入する
-		JSON_Array *persons = json_object_get_array(root, "send");
-
-
-		fprintf(outFile, "\\begin{document}\n");
-		for(int i = 0; i < json_array_get_count(persons); i++) {
-		//for(int i = 0; i < num; i++ ){
-				JSON_Object *person = json_array_get_object(persons, i);
-
-				//ファイルに書き込む {{{
-				fprintf(outFile, "\\addaddress\n");
-				fprintf(outFile, "    {%s %s}{様}\n", json_object_dotget_string(person, "name.last"), json_object_dotget_string(person, "name.first"));
-				fprintf(outFile, "    {%d}\n", (int) json_object_dotget_number(person,"address.postal_code"));
-				fprintf(outFile, "    {%s %s}\n", json_object_dotget_string(person, "address.prefectures"), json_object_dotget_string(person, "address.cities"));
-				fprintf(outFile, "    {%s}\n", json_object_dotget_string(person, "address.apartment"));
-				fprintf(outFile, "\n");
-				// }}}
-		}
+//自分の宛名をファイルに書きこむ {{{
+fprintf(outFile, "\\documentclass[]{jletteraddress}\n");
+fprintf(outFile, "\n\\sendername{%s %s}\n", selfinfo.name.last, selfinfo.name.first);
+fprintf(outFile, "\\senderaddressa{%s %s}\n", selfinfo.address.prefectures, selfinfo.address.cities);
+fprintf(outFile, "\\senderaddressb{%s}\n", selfinfo.address.apartment);
+fprintf(outFile, "\\senderpostcode{%d}\n\n", selfinfo.address.postal_code);
 // }}}
 
+//送り先の宛先を構造体に保存し、ファイルに書き込む {{{
+//personsにjson内の配列sendの要素を代入する
+JSON_Array *persons = json_object_get_array(root, "send");
+
+fprintf(outFile, "\\begin{document}\n");
+for(int i = 0; i < json_array_get_count(persons); i++) {
+		//for(int i = 0; i < num; i++ ){
+		JSON_Object *person = json_array_get_object(persons, i);
+
+		//ファイルに書き込む {{{
+		fprintf(outFile, "\\addaddress\n");
+		fprintf(outFile, "    {%s %s}{様}\n", json_object_dotget_string(person, "name.last"), json_object_dotget_string(person, "name.first"));
+		fprintf(outFile, "    {%d}\n", (int) json_object_dotget_number(person,"address.postal_code"));
+		fprintf(outFile, "    {%s %s}\n", json_object_dotget_string(person, "address.prefectures"), json_object_dotget_string(person, "address.cities"));
+		fprintf(outFile, "    {%s}\n", json_object_dotget_string(person, "address.apartment"));
+		fprintf(outFile, "\n");
+		// }}}
+}
+// }}}
 fprintf(outFile, "\\end{document}");
 
 fclose(outFile);

@@ -5,7 +5,6 @@
 #include <wchar.h>
 #include "./parson/parson.h" //json読み込み用のライブラリ
 
-#define TCHAR wchar_t
 #define NAME_MAX 1012
 #define PREFECTURES_MAX 1012
 #define CITIES_MAX 1012
@@ -27,7 +26,6 @@
 				_struct._key = json_object_dotget_boolean(_json, #_key);    \
 		}while(0); 
 //}}}
-
 
 // 構造体宣言 {{{
 //struct _NAMEをNameとして宣言
@@ -91,81 +89,94 @@ typedef struct _PERSONINFO {
  *		}
  * }
  * }}} */
+
 int main(int argc, char *argv[]) {
 		//引数がなかった場合エラーを返す {{{
 		if (argc != 2) { 
 				fprintf(stderr, "error: not indicate json filename\n");
 				exit(1);
-		} //}}}
+		} 
+		//}}}
 
-//parseするjsonファイルを指定
-//errorの場合NULLを返す
-JSON_Value *root_value = json_parse_file(argv[1]);
-
-//jsonファイルを開けなかった場合のerror処理 {{{
-if ( root_value == NULL ){
-		fprintf(stderr, "error: fail to open the file:%s\n", argv[1] );
-		exit(1);
-} // }}}
-
-FILE* outFile = fopen("letter_address.tex", "w");
-//error 処理 {{{
-if (!outFile) { 
-		perror("error: letter_address.tex");
-		exit(1);
-}
-//}}}
-
-JSON_Object *root = json_object(root_value);
-//selfinfoに自分の住所を格納する {{{
-PERSON_INFO selfinfo;
-JSON_Object *self = json_object_get_object(root, "self");
-JSON2STRUCT_STR(self, selfinfo, name.first, NAME_MAX);
-JSON2STRUCT_STR(self, selfinfo, name.last, NAME_MAX);
-JSON2STRUCT_NUM(self, selfinfo, address.postal_code);
-JSON2STRUCT_STR(self, selfinfo, address.prefectures, PREFECTURES_MAX);
-JSON2STRUCT_STR(self, selfinfo, address.cities, CITIES_MAX);
-JSON2STRUCT_STR(self, selfinfo, address.apartment, APARTMENT_MAX);
-//}}}
-
-//自分の宛名をファイルに書きこむ {{{
-fprintf(outFile, "\\documentclass[]{jletteraddress}\n");
-fprintf(outFile, "\n\\sendername{%s %s}\n", selfinfo.name.last, selfinfo.name.first);
-fprintf(outFile, "\\senderaddressa{%s %s}\n", selfinfo.address.prefectures, selfinfo.address.cities);
-fprintf(outFile, "\\senderaddressb{%s}\n", selfinfo.address.apartment);
-fprintf(outFile, "\\senderpostcode{%d}\n\n", selfinfo.address.postal_code);
-// }}}
-
-//送り先の宛先を構造体に保存し、ファイルに書き込む {{{
-//personsにjson内の配列sendの要素を代入する
-JSON_Array *persons = json_object_get_array(root, "send");
-
-fprintf(outFile, "\\begin{document}\n");
-for(int i = 0; i < json_array_get_count(persons); i++) {
-		//for(int i = 0; i < num; i++ ){
-		JSON_Object *person = json_array_get_object(persons, i);
-
-		//ファイルに書き込む {{{
-		fprintf(outFile, "\\addaddress\n");
-		fprintf(outFile, "    {%s %s}{様}\n", json_object_dotget_string(person, "name.last"), json_object_dotget_string(person, "name.first"));
-		fprintf(outFile, "    {%d}\n", (int) json_object_dotget_number(person,"address.postal_code"));
-		fprintf(outFile, "    {%s %s}\n", json_object_dotget_string(person, "address.prefectures"), json_object_dotget_string(person, "address.cities"));
-		fprintf(outFile, "    {%s}\n", json_object_dotget_string(person, "address.apartment"));
-		fprintf(outFile, "\n");
+		// open the json file {{{
+		JSON_Value *root_value = json_parse_file(argv[1]);
+		if ( root_value == NULL ){
+				fprintf(stderr, "error: fail to open the file:%s\n", argv[1] );
+				exit(1);
+		}
 		// }}}
-}
-// }}}
-fprintf(outFile, "\\end{document}");
 
-fclose(outFile);
-json_value_free(root_value);
+		// read json file {{{
+		JSON_Object *root = json_object(root_value);
+		//selfinfoに自分の住所を格納する {{{
+		JSON_Object *self = json_object_get_object(root, "self");
+		PERSON_INFO selfinfo;
+		JSON2STRUCT_STR(self, selfinfo, name.first, NAME_MAX);
+		JSON2STRUCT_STR(self, selfinfo, name.last, NAME_MAX);
+		JSON2STRUCT_NUM(self, selfinfo, address.postal_code);
+		JSON2STRUCT_STR(self, selfinfo, address.prefectures, PREFECTURES_MAX);
+		JSON2STRUCT_STR(self, selfinfo, address.cities, CITIES_MAX);
+		JSON2STRUCT_STR(self, selfinfo, address.apartment, APARTMENT_MAX);
+		//}}}
 
-printf("finished tex file: letter_address.tex");
-//}}}
+		//送り先の宛先を構造体sendinfo[]に保存する {{{
+		JSON_Array *persons = json_object_get_array(root, "send");
 
-// compile
-system("platex letter_address.tex");
-system("dvipdfmx letter_address.dvi");
-printf("finished letter pdf");
-return 0;
+		//送り先の人数
+		int send_count = json_array_get_count(persons);
+
+		PERSON_INFO sendinfo[send_count];
+		for(int i = 0; i < send_count; i++) {
+				JSON_Object *person = json_array_get_object(persons, i);
+
+				JSON2STRUCT_STR(person, sendinfo[i], name.first, NAME_MAX);
+				JSON2STRUCT_STR(person, sendinfo[i], name.last, NAME_MAX);
+				JSON2STRUCT_NUM(person, sendinfo[i], address.postal_code);
+				JSON2STRUCT_STR(person, sendinfo[i], address.prefectures, PREFECTURES_MAX);
+				JSON2STRUCT_STR(person, sendinfo[i], address.cities, CITIES_MAX);
+				JSON2STRUCT_STR(person, sendinfo[i], address.apartment, APARTMENT_MAX);
+		}
+		// }}}
+
+		json_value_free(root_value);
+		// }}}
+
+		// ファイルに書き込む {{{
+		FILE* outFile = fopen("letter_address.tex", "w");
+		if (!outFile) { 
+				perror("error: letter_address.tex");
+				exit(1);
+		}
+
+		//自分の宛名をファイルに書きこむ {{{
+		fprintf(outFile, "\\documentclass[]{jletteraddress}\n");
+		fprintf(outFile, "\n\\sendername{%s %s}\n", selfinfo.name.last, selfinfo.name.first);
+		fprintf(outFile, "\\senderaddressa{%s %s}\n", selfinfo.address.prefectures, selfinfo.address.cities);
+		fprintf(outFile, "\\senderaddressb{%s}\n", selfinfo.address.apartment);
+		fprintf(outFile, "\\senderpostcode{%d}\n\n", selfinfo.address.postal_code);
+		// }}}
+
+		// 送り先の宛先を書き込む {{{
+		fprintf(outFile, "\\begin{document}\n");
+		for(int i = 0; i < send_count; i++) {
+				fprintf(outFile, "\\addaddress\n");
+				fprintf(outFile, "    {%s %s}{様}\n", sendinfo[i].name.last, sendinfo[i].name.first);
+				fprintf(outFile, "    {%d}\n", sendinfo[i].address.postal_code);
+				fprintf(outFile, "    {%s %s}\n", sendinfo[i].address.prefectures, sendinfo[i].address.cities);
+				fprintf(outFile, "    {%s}\n", sendinfo[i].address.apartment);
+				fprintf(outFile, "\n");
+		}
+		fprintf(outFile, "\\end{document}");
+		// }}}
+
+		fclose(outFile);
+		printf("finished tex file: letter_address.tex");
+		//}}}
+
+		// compile {{{
+		system("platex letter_address.tex");
+		system("dvipdfmx letter_address.dvi");
+		printf("finished letter pdf");
+		// }}}
+		return 0;
 }

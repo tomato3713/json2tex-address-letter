@@ -1,11 +1,11 @@
-#nenga
+# nenga
 ====
 
-##何をするのか
+## 何をするのか
 jsonファイルを読み込み、宛名を出力するためのtexファイル(letter_address.tex)を生成する。
 その後、それをコンパイルしpdfファイルを得る。
 
-##What do the application
+## What do the application
 You passed the argument json file, the application make address side of letter.
 
 # Usage
@@ -23,7 +23,7 @@ open the pdf file "letter_address.pdf".
 sigmantation faultが出た場合はjsonファイルの形式が間違っている可能性が高いのでjsonファイルを見直してみてください。
 if the application shows "simantation fault", format of json file may be wrong.
 
-#Requirement
+# Requirement
 jsonファイルの文字コードはutf-8とする。
 クラスファイルとしてueokande/jletteraddressを使用している。
 
@@ -32,5 +32,5 @@ the app use platex and dvipdfmx, also use the class ueokande/jletteraddress.
 So, you need to get the class file from under github ripository.
 [jletteraddress](https://github.com/ueokande/jletteraddress)
 
-#Lisence
+# Lisence
 MIT

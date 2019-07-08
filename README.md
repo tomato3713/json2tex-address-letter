@@ -15,7 +15,10 @@ send.jsonを好きなように書き換えます。
 
 You edit the send.json which you want to write, could rename the file name like.
 
+``` sh
+make
 ./atena send.json
+```
 
 pdfファイル(letter_address.pdf)を開いて確認します。
 
